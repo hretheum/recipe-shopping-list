@@ -1,11 +1,11 @@
 # Integracja Obsidian → lista zakupów: założenia projektowe
 
 **Data:** 2026-07-24
-**Status:** zatwierdzone do planowania implementacji
+**Status:** zatwierdzone do planowania implementacji (rev. 2 — architektura pluginowa)
 
 ## Cel
 
-Umożliwić wybranie jednego lub dwóch plików markdown z przepisami (notatki Obsidian, dodawane przez Obsidian Web Clipper) i przeniesienie z nich listy składników do mobilnej aplikacji zakupowej — ze znormalizowanymi jednostkami i zsumowanymi ilościami, jeśli ten sam składnik występuje w więcej niż jednym przepisie.
+Umożliwić wybranie jednego lub dwóch plików markdown z przepisami (notatki Obsidian, dodawane przez Obsidian Web Clipper) i przeniesienie z nich listy składników do mobilnej aplikacji zakupowej — ze znormalizowanymi jednostkami i zsumowanymi ilościami, jeśli ten sam składnik występuje w więcej niż jednym przepisie. Cała funkcjonalność ma działać jako natywna wtyczka Obsidian, uruchamiana bez opuszczania aplikacji.
 
 ## Kontekst wejściowy
 
@@ -19,12 +19,12 @@ Przykład referencyjny: `/Users/eorlowski/Documents/prv-sync/source/prv/kukbuk/N
 
 ## Wybrana architektura
 
-Rozdzielamy dwie odpowiedzialności:
+Projekt od podstaw jest **wtyczką Obsidian** (TypeScript, desktop), nie osobnym skryptem CLI. Rozdzielamy dwie odpowiedzialności:
 
-1. **Normalizacja i sumowanie ilości** — dzieje się w naszym własnym pipeline, nie w aplikacji zakupowej.
+1. **Normalizacja i sumowanie ilości** — dzieje się wewnątrz wtyczki, nie w aplikacji zakupowej.
 2. **Docelowa aplikacja zakupowa** — dostaje już gotowy, znormalizowany tekst i tylko go przechowuje/wyświetla na telefonie.
 
-To pozwala wybrać dowolną aplikację jako cel, bez zależności od tego, czy ma ona strukturalne pola ilość+jednostka.
+**LLM backend jest wymienny z założenia:** ustawienia wtyczki pozwalają skonfigurować dowolny endpoint zgodny z **OpenAI Chat Completions API** — obejmuje to lokalny Ollama/llama.cpp (który udostępnia taki endpoint), jak i dowolne inne kompatybilne API (chmurowe albo inne lokalne), przez zmianę URL/klucza/modelu w ustawieniach, bez zmian w kodzie.
 
 ### Rozważane opcje aplikacji docelowej (research)
 
@@ -39,38 +39,54 @@ To pozwala wybrać dowolną aplikację jako cel, bez zależności od tego, czy m
 | Grocy (self-hosted) | w pełni oficjalne REST API | zero ToS, ale wymaga własnego hostingu i product master data | pełna struktura, auto-sumowanie |
 | Mealie (self-hosted) | w pełni oficjalne REST API, natywny dla przepisów | zero ToS, ale wymaga własnego hostingu, na telefonie tylko PWA | pełna struktura (quantity+unit+food) |
 
-**Decyzja:** Bring! jako aplikacja docelowa — realnie używana na telefonie (iPhone), dojrzała biblioteka integracyjna, pełny CRUD (dodaj/edytuj/oznacz kupione). Świadomie akceptujemy ryzyko nieoficjalnego API; adapter do Bring! ma być izolowany i łatwo wymienny (np. na Mealie/Grocy), gdyby API przestało działać lub potrzeby wzrosły.
+**Decyzja:** Bring! jako aplikacja docelowa — realnie używana na telefonie (iPhone), dojrzała biblioteka integracyjna, pełny CRUD (dodaj/edytuj/oznacz kupione). Świadomie akceptujemy ryzyko nieoficjalnego API; integracja z Bring! ma być izolowana za wspólnym interfejsem adaptera, żeby dało się ją podmienić (np. na Mealie/Grocy), gdyby API przestało działać lub potrzeby wzrosły.
+
+## Architektura wtyczki (komponenty)
+
+- **`main.ts`** — rejestruje komendę w palecie poleceń Obsidiana ("Dodaj składniki do listy zakupów") oraz opcjonalnie ikonę w pasku bocznym/skrót klawiszowy.
+- **`FileSelectionModal`** — pozwala wybrać 1 lub 2 notatki: domyślnie aktywnie otwarta notatka, z opcją dodania drugiej z listy notatek o `type: recipe`.
+- **`IngredientParser`** — parsuje tabelę `## Ingredients` (kolumna `PL + SI`) z wybranych notatek.
+- **`Normalizer`** — woła skonfigurowany endpoint LLM (patrz sekcja "Backend LLM"), korzysta z i rozbudowuje słownik `ingredient_units.yaml`.
+- **`Summer`** — grupuje pozycje po znormalizowanej nazwie składnika i sumuje ilości.
+- **`ShoppingListAdapter`** (interfejs) z implementacją **`BringAdapter`** — wysyła gotowe pozycje do Bring!. Interfejs pozwala w przyszłości podpiąć kolejne aplikacje (Mealie/Grocy) bez zmiany reszty wtyczki.
+- **`SettingsTab`** — konfiguracja: endpoint LLM (URL, opcjonalny klucz API, nazwa modelu), dane logowania do Bring!, lokalizacja pliku słownika.
 
 ## Przepływ danych
 
 ```
-[Notatki .md w Obsidian] (prv-sync/source/prv/kukbuk/*.md)
-        │  użytkownik wskazuje 1-2 pliki
+[Komenda w palecie poleceń Obsidiana: "Dodaj do listy zakupów"]
+        │  użytkownik wybiera 1-2 notatki (aktywna notatka + opcjonalnie druga)
         ▼
-[Parser markdown] → wyciąga tabelę "Ingredients" (kolumna "PL + SI")
+[IngredientParser] → wyciąga tabelę "Ingredients" (kolumna "PL + SI")
         ▼
-[Normalizator (lokalny LLM przez Ollama/llama.cpp)]
+[Normalizer] → wywołuje skonfigurowany endpoint LLM
+   (domyślnie lokalny Ollama, dowolny inny zgodny z OpenAI Chat Completions API)
    - rozdziela ilość + jednostkę + nazwę składnika
-   - sprawdza słownik ingredient_units.yaml
-   - dla nieznanego składnika proponuje nowy wpis (do akceptacji użytkownika)
+   - sprawdza/rozbudowuje słownik ingredient_units.yaml (plik w vaulcie)
         ▼
-[Sumator] → grupuje po znormalizowanej nazwie składnika, sumuje ilości
+[Summer] → grupuje po znormalizowanej nazwie, sumuje ilości
    (np. koperek: "1-2 łyżki" + "duża garść" → "2 pęczki")
         ▼
-[Adapter Bring!] → loguje się (bring-api), dodaje/aktualizuje pozycje na liście
+[BringAdapter] → loguje się, dodaje/aktualizuje pozycje na liście Bring!
         ▼
-[Podsumowanie w terminalu] → co dodano, co zsumowano, jakie nowe wpisy trafiły do słownika
+[Notice/modal w Obsidianie] → podsumowanie: co dodano, co zsumowano,
+   jakie nowe wpisy trafiły do słownika
 ```
 
 ## Sposób uruchamiania
 
-- **Rdzeń:** skrypt CLI w Pythonie, np. `python groclip.py przepis1.md przepis2.md` — niezależny, testowalny, uruchamialny z terminala bez udziału Claude Code.
-- **Wygoda:** cienki wrapper jako komenda/skill Claude Code, żeby można było poprosić w sesji "dodaj te przepisy do zakupów" bez przełączania się do terminala.
-- Użytkownik zawsze wskazuje pliki ręcznie — brak automatycznego wykrywania/skanowania vaulta w MVP.
+Natywna komenda wtyczki Obsidian, dostępna z palety poleceń i opcjonalnie ze skrótu klawiszowego lub ikony w pasku bocznym. Użytkownik nie opuszcza Obsidiana ani nie kopiuje ścieżek plików ręcznie — wybór notatek odbywa się w modalu wewnątrz aplikacji.
+
+## Backend LLM
+
+Wtyczka nie zakłada jednego, sztywnego dostawcy LLM. Ustawienia pozwalają skonfigurować dowolny endpoint zgodny z **OpenAI Chat Completions API**:
+
+- **Domyślnie:** lokalny serwer Ollama/llama.cpp (adres do ustalenia, np. `http://localhost:11434/v1`), bez kosztów per-token.
+- **Alternatywnie:** dowolny inny kompatybilny endpoint (chmurowy albo inny lokalny) — wystarczy zmienić URL/klucz/model w ustawieniach, bez zmian w kodzie wtyczki.
 
 ## Model danych
 
-- **`ingredient_units.yaml`** — słownik: nazwa składnika → preferowana jednostka zakupowa + notatki. Trzymany w vaulcie lub folderze projektu, rośnie z czasem, edytowalny ręcznie. Przykład:
+- **`ingredient_units.yaml`** — słownik: nazwa składnika → preferowana jednostka zakupowa + notatki. Trzymany jako plik w vaulcie, rośnie z czasem, edytowalny ręcznie. Przykład:
   ```yaml
   koperek: {unit: pęczek, note: "nie waż, kupuj pęczkami"}
   szczypiorek: {unit: pęczek}
@@ -83,25 +99,26 @@ To pozwala wybrać dowolną aplikację jako cel, bez zależności od tego, czy m
   ```
 - **Format do Bring!:** sklejony string wolnotekstowy, np. `"koperek — 2 pęczki"` (Bring! nie ma pól strukturalnych ilość/jednostka).
 
-## Backend LLM
-
-Lokalny serwer Ollama/llama.cpp (model Llama), wywoływany przez REST API bez kosztów per-token. Adres/port endpointu do potwierdzenia na etapie implementacji.
-
 ## Ryzyka
 
-- **Stabilność API Bring!** — nieoficjalne, reverse-engineered; może przestać działać przy zmianie backendu. Mitygacja: izolowany, wymienny adapter.
+- **Stabilność API Bring!** — nieoficjalne, reverse-engineered; może przestać działać przy zmianie backendu. Mitygacja: integracja izolowana za interfejsem `ShoppingListAdapter`, łatwa do podmiany.
 - **Spójność normalizacji między uruchomieniami** — łagodzona przez trwały słownik `ingredient_units.yaml` zamiast decyzji LLM ad-hoc za każdym razem.
-- **Dane logowania do Bring!** — do ustalenia: `keyring` (macOS Keychain) vs. lokalny `.env` poza synchronizowanym vaultem (żeby nie trafiły do prv-sync).
+- **Przechowywanie danych logowania do Bring! w ustawieniach wtyczki** — Obsidian trzyma dane wtyczek w `.obsidian/plugins/<id>/data.json`, zwykle jawnym tekstem; jeśli ten folder synchronizuje się razem z vaultem (jak w `prv-sync`), dane logowania mogą trafić do miejsca synchronizacji. Do ustalenia w implementacji: wykluczenie folderu wtyczki z synchronizacji albo inny sposób przechowania sekretu.
+- **Brak potwierdzonej biblioteki JS/TS do Bring!** — dojrzałe biblioteki społecznościowe (`bring-api`) są w Pythonie; wtyczka Obsidian działa w środowisku Node/Electron, więc potrzebny jest odpowiednik w JS/TS (istniejący pakiet npm albo własny port protokołu) — do zweryfikowania na etapie implementacji.
+- **Zasięg platformowy** — wtyczki Obsidian na desktopie mają dostęp do Node.js API, co ułatwia wywołania HTTP do LLM i do Bring! bez ograniczeń typowych dla zwykłych stron webowych. Projekt zakłada tylko desktop (macOS) — Obsidian Mobile nie jest w zakresie, bo na telefonie i tak korzystasz z appki Bring!, nie z Obsidiana, do samych zakupów.
 
 ## Poza zakresem MVP
 
-- Automatyczne wykrywanie/skanowanie plików przepisów w vaultcie
+- Automatyczne wykrywanie/skanowanie plików przepisów (nadal ręczny wybór, teraz przez modal w Obsidianie)
 - Oznaczanie z powrotem w Obsidianie, które składniki zostały kupione
-- Obsługa wielu aplikacji zakupowych jednocześnie
-- Dedykowany plugin/UI w Obsidianie (na start: CLI + opcjonalny skill Claude Code)
+- Obsługa wielu aplikacji zakupowych jednocześnie (interfejs adaptera to przewiduje na przyszłość, ale MVP ma tylko Bring!)
+- Wsparcie Obsidian Mobile
+- Publikacja w oficjalnym katalogu wtyczek Obsidian (na start: instalacja lokalna/manualna)
 
 ## Otwarte pytania do etapu planowania implementacji
 
-1. Dokładny adres/port lokalnego serwera Ollama i nazwa modelu do użycia.
-2. Miejsce przechowywania danych logowania do Bring! (`keyring` vs `.env`).
-3. Docelowa lokalizacja pliku `ingredient_units.yaml` (vault czy folder projektu).
+1. Dokładny adres/port lokalnego serwera Ollama i nazwa domyślnego modelu.
+2. Konkretna biblioteka/implementacja JS/TS do komunikacji z Bring! (istniejący pakiet npm czy własny port protokołu).
+3. Sposób bezpiecznego przechowywania danych logowania do Bring! w kontekście synchronizowanego vaulta.
+4. Docelowa lokalizacja i format pliku `ingredient_units.yaml` wewnątrz vaulta.
+5. Mechanizm wyboru drugiej notatki w modalu (lista wszystkich notatek `type: recipe` czy przeszukiwanie fuzzy).
