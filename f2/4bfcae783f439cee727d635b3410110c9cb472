@@ -1,0 +1,19 @@
+docs/superpowers/specs/2026-07-24-lista-zakupow-integracja-design.md
+  s_04da278ec6a9f9::t_f7a055b1b9df63 1-107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "f24bfcae783f439cee727d635b3410110c9cb472",
+  "prompts": {},
+  "sessions": {
+    "s_04da278ec6a9f9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7e0192d8-0de4-4cd4-9466-bfe8838596cd",
+        "model": "unknown"
+      },
+      "human_author": "Eryk Orłowski <eryk@talentcanvas.tech>"
+    }
+  }
+}
