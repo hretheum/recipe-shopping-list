@@ -1,0 +1,7 @@
+.DS_Store
+.env
+.env.*
+!.env.example
+node_modules/
+obsidian-lista-zakupow/test/.build/
+obsidian-lista-zakupow/main.js
