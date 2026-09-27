@@ -1,0 +1,19 @@
+.gitignore
+  s_21802ec5c4d311::t_d450c43f4d96b6 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "65f221317fd48d0a674b02bc98cf9bc2972681f9",
+  "prompts": {},
+  "sessions": {
+    "s_21802ec5c4d311": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cfbfaf62-ff96-4839-83fb-af2372767d8e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "Eryk Orłowski <eryk@talentcanvas.tech>"
+    }
+  }
+}
