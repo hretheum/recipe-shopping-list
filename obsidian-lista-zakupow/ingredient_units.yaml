@@ -1,0 +1,18 @@
+# Słownik preferowanych jednostek zakupowych.
+# Klucz: nazwa składnika w mianowniku, małymi literami.
+# unit — jednostka w jakiej faktycznie kupujesz; note — wskazówka dla LLM;
+# round_to — zaokrąglanie sumy W GÓRĘ do wielokrotności (np. 0.5 kg).
+# Skopiuj ten plik do vaulta (domyślna ścieżka w ustawieniach: ingredient_units.yaml).
+
+koperek: {unit: pęczek, note: "nie waż, kupuj pęczkami"}
+szczypiorek: {unit: pęczek}
+pietruszka: {unit: pęczek, note: "natka; korzeń osobno jako 'pietruszka korzeń'"}
+masło: {unit: kostka, note: "kostka = 200 g", round_to: 1}
+mąka pszenna: {unit: kg, round_to: 0.5}
+mleko: {unit: l, round_to: 0.5}
+jajko: {unit: szt., note: "zaokrąglaj do 10 przy większych ilościach"}
+czosnek: {unit: główka, note: "przeliczaj ząbki na główki: 1 główka ≈ 10 ząbków"}
+cytryna: {unit: szt.}
+bułka tarta: {unit: opakowanie, note: "opakowanie = 500 g"}
+smalec: {unit: opakowanie, note: "opakowanie = 200 g"}
+kapusta młoda: {unit: główka}
