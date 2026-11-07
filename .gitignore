@@ -3,5 +3,6 @@
 .env.*
 !.env.example
 node_modules/
-obsidian-lista-zakupow/test/.build/
-obsidian-lista-zakupow/main.js
+test/.build/
+main.js
+data.json

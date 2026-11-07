@@ -1,9 +1,0 @@
-{
-	"id": "lista-zakupow",
-	"name": "Lista zakupów",
-	"version": "0.1.0",
-	"minAppVersion": "1.5.7",
-	"description": "Dodaje składniki z notatek przepisów (Obsidian Web Clipper) do listy zakupów Bring!, z normalizacją jednostek i sumowaniem ilości przez LLM.",
-	"author": "Eryk Orłowski",
-	"isDesktopOnly": true
-}
