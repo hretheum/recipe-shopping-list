@@ -1,0 +1,19 @@
+.rsl-preview .rsl-row {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) 5em 5em;
+	gap: 4px 8px;
+	align-items: center;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.rsl-preview .rsl-row input[type='text'] {
+	min-width: 0;
+	width: 100%;
+}
+
+.rsl-preview .rsl-source {
+	grid-column: 2 / -1;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}

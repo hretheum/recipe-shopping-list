@@ -45,13 +45,21 @@ export class PreviewModal extends Modal {
 		const { contentEl } = this;
 		contentEl.createEl('p', { text: 'Untick what you do not need and edit names, quantities or units. Nothing is sent until you confirm.' });
 
+		contentEl.addClass('rsl-preview');
 		for (const row of this.rows) {
-			new Setting(contentEl)
-				.setDesc(row.source.sourceRecipes.join(', '))
-				.addToggle((toggle) => toggle.setValue(row.include).onChange((value) => (row.include = value)))
-				.addText((text) => text.setValue(row.name).onChange((value) => (row.name = value)))
-				.addText((text) => text.setPlaceholder('qty').setValue(row.quantity).onChange((value) => (row.quantity = value)))
-				.addText((text) => text.setPlaceholder('unit').setValue(row.unit).onChange((value) => (row.unit = value)));
+			const line = contentEl.createDiv({ cls: 'rsl-row' });
+			const check = line.createEl('input', { type: 'checkbox', cls: 'rsl-include' });
+			check.checked = row.include;
+			check.addEventListener('change', () => (row.include = check.checked));
+			const bind = (cls: string, placeholder: string, key: 'name' | 'quantity' | 'unit') => {
+				const input = line.createEl('input', { type: 'text', cls, placeholder });
+				input.value = row[key];
+				input.addEventListener('input', () => (row[key] = input.value));
+			};
+			bind('rsl-name', 'name', 'name');
+			bind('rsl-qty', 'qty', 'quantity');
+			bind('rsl-unit', 'unit', 'unit');
+			line.createDiv({ cls: 'rsl-source', text: row.source.sourceRecipes.join(', ') });
 		}
 
 		new Setting(contentEl).addButton((button) =>
