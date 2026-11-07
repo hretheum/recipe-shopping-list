@@ -1,7 +1,7 @@
 {
 	"id": "recipe-shopping-list",
 	"name": "Recipe Shopping List",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"minAppVersion": "1.11.4",
 	"description": "Send ingredients from recipe notes to a Bring! shopping list, with LLM-based unit normalization and summed quantities.",
 	"author": "Eryk Orłowski",

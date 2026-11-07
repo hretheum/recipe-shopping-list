@@ -1,6 +1,6 @@
 {
 	"name": "recipe-shopping-list",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Send ingredients from recipe notes to a Bring! shopping list, with LLM-based unit normalization and summed quantities.",
 	"main": "main.js",
 	"type": "module",
