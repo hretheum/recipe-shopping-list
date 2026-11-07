@@ -87,6 +87,7 @@ Please read this before installing.
 - **Unofficial API.** Bring! does not publish an API for this. The plugin talks to the same web API that the Bring! web app uses, modeled on the open-source [node-bring-api](https://github.com/foxriver76/node-bring-api). It may stop working at any time, and using it may not be permitted by Bring!'s terms. **Use it at your own risk and with your own account.**
 - **Secrets.** Your Bring! password and the optional LLM API key are stored in Obsidian's secret storage (the system keychain), not in `data.json` and not in your vault. The Bring! email is stored in the plugin's `data.json`.
 - **No telemetry, no ads, no payments.** The plugin does not collect or send usage data anywhere.
+- **Vault enumeration.** To offer your recipes in the picker, the plugin lists the Markdown files in the vault and reads their frontmatter through Obsidian's metadata cache. It opens the content of a note only after you select it. Nothing from this listing is sent anywhere.
 - **Files.** The plugin reads the notes you select and your unit dictionary, and it can write the dictionary file and the "sent" frontmatter property. It does not access files outside your vault.
 
 ## Troubleshooting
