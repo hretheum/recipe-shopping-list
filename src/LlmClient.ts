@@ -46,7 +46,8 @@ export function createChatFn(settings: RecipeShoppingListSettings, apiKey: strin
 
 		let content: unknown;
 		try {
-			content = response.json?.choices?.[0]?.message?.content;
+			const body = response.json as { choices?: Array<{ message?: { content?: unknown } }> } | null;
+			content = body?.choices?.[0]?.message?.content;
 		} catch {
 			throw new Error(`LLM: the reply is not valid JSON: ${response.text.slice(0, 300)}`);
 		}

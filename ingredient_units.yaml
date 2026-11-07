@@ -1,18 +1,17 @@
-# Słownik preferowanych jednostek zakupowych.
-# Klucz: nazwa składnika w mianowniku, małymi literami.
-# unit — jednostka w jakiej faktycznie kupujesz; note — wskazówka dla LLM;
-# round_to — zaokrąglanie sumy W GÓRĘ do wielokrotności (np. 0.5 kg).
-# Skopiuj ten plik do vaulta (domyślna ścieżka w ustawieniach: ingredient_units.yaml).
+# Dictionary of preferred shopping units.
+# Key: ingredient name in the singular, lowercase, in the language of your recipes.
+# unit    - the unit you actually buy in.
+# note    - a hint for the LLM.
+# round_to - round the SUM up to a multiple of this value (e.g. 0.5 kg).
+# integer - the unit is countable; quantities are rounded up to whole numbers.
+# Copy this file into your vault (default path in the settings: ingredient_units.yaml).
 
-koperek: {unit: pęczek, note: "nie waż, kupuj pęczkami"}
-szczypiorek: {unit: pęczek}
-pietruszka: {unit: pęczek, note: "natka; korzeń osobno jako 'pietruszka korzeń'"}
-masło: {unit: kostka, note: "kostka = 200 g", round_to: 1}
-mąka pszenna: {unit: kg, round_to: 0.5}
-mleko: {unit: l, round_to: 0.5}
-jajko: {unit: szt., note: "zaokrąglaj do 10 przy większych ilościach"}
-czosnek: {unit: główka, note: "przeliczaj ząbki na główki: 1 główka ≈ 10 ząbków"}
-cytryna: {unit: szt.}
-bułka tarta: {unit: opakowanie, note: "opakowanie = 500 g"}
-smalec: {unit: opakowanie, note: "opakowanie = 200 g"}
-kapusta młoda: {unit: główka}
+dill: {unit: bunch, integer: true, note: "do not weigh, buy by the bunch"}
+chives: {unit: bunch, integer: true}
+butter: {unit: stick, integer: true, note: "one stick = 200 g"}
+flour: {unit: kg, round_to: 0.5}
+milk: {unit: l, round_to: 0.5}
+egg: {unit: pcs, integer: true, note: "round to 10 for larger amounts"}
+garlic: {unit: head, integer: true, note: "convert cloves to heads: 1 head is about 10 cloves"}
+lemon: {unit: pcs, integer: true}
+breadcrumbs: {unit: package, integer: true, note: "one package = 500 g"}

@@ -8,13 +8,20 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
-		"test": "node test/build.mjs && node --test test/*.test.mjs test/*.test.cjs"
+		"test": "node test/build.mjs && node --test test/*.test.mjs test/*.test.cjs",
+		"lint": "eslint ."
 	},
 	"license": "MIT",
 	"devDependencies": {
+		"@eslint/js": "^9.39.5",
 		"@types/node": "^22.15.17",
 		"esbuild": "0.25.5",
+		"eslint": "^9.39.5",
+		"eslint-plugin-obsidianmd": "^0.5.1",
+		"globals": "^17.14.0",
+		"jiti": "^2.7.0",
 		"obsidian": "latest",
-		"typescript": "^5.8.3"
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.72.1"
 	}
 }

@@ -11,6 +11,10 @@ import { RecipeShoppingListSettings } from './types';
 
 type FrontmatterSettings = Pick<RecipeShoppingListSettings, 'recipeProperty' | 'recipeValue' | 'sentProperty'>;
 
+function toText(value: unknown): string {
+	return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' ? String(value) : '';
+}
+
 export function isRecipeNote(app: App, file: TFile, settings: FrontmatterSettings): boolean {
 	if (settings.recipeProperty.trim() === '') {
 		return true;
@@ -20,13 +24,14 @@ export function isRecipeNote(app: App, file: TFile, settings: FrontmatterSetting
 	if (wanted === '') {
 		return value !== undefined;
 	}
-	return Array.isArray(value) ? value.map(String).includes(wanted) : String(value) === wanted;
+	return Array.isArray(value) ? value.map(toText).includes(wanted) : toText(value) === wanted;
 }
 
 /** The date this note's ingredients were last sent, or null. */
 export function sentDate(app: App, file: TFile, settings: FrontmatterSettings): string | null {
 	const value: unknown = app.metadataCache.getFileCache(file)?.frontmatter?.[settings.sentProperty];
-	return value === undefined || value === null || value === '' ? null : String(value);
+	const text = toText(value);
+	return text === '' ? null : text;
 }
 
 /** Recipes sorted with unsent first, then newest first. */

@@ -1,70 +1,92 @@
-# Lista zakupów — wtyczka Obsidian
+# Recipe Shopping List
 
-Wybierasz 1-2 notatki przepisów (szablon Obsidian Web Clipper, frontmatter
-`type: recipe`), a wtyczka: parsuje tabelę `## Ingredients` (kolumna `PL + SI`),
-normalizuje składniki przez LLM (dowolny endpoint zgodny z OpenAI Chat
-Completions — domyślnie lokalny Ollama), sumuje ilości między przepisami
-w preferowanych jednostkach zakupowych (słownik `ingredient_units.yaml`)
-i wysyła gotowe pozycje na wybraną listę Bring!.
+An [Obsidian](https://obsidian.md) plugin that sends the ingredients of your recipe notes to a [Bring!](https://www.getbring.com) shopping list.
 
-Dokumentacja projektowa: `../docs/superpowers/specs/2026-07-24-lista-zakupow-integracja-design.md`
-oraz `../docs/sciezka-dowodowa.md` (źródła, decyzje, logi testów).
+Pick one or more recipe notes. The plugin reads their ingredient list, asks an LLM of your choice to normalize every line (name, quantity, unit), converts amounts to the units you actually shop in, sums quantities across recipes, lets you review the result, and adds the items to a Bring! list.
 
-## Build
+> **Not affiliated.** This is an independent, community project. It has no connection with, and is not endorsed or sponsored by, Obsidian or Bring!. "Obsidian" and "Bring!" are trademarks of their respective owners and are used here only to describe what this plugin works with. Other product names (Ollama, llama.cpp, LM Studio, OpenAI, OpenRouter) are used for reference only, for the same reason.
 
+## Features
+
+- Reads ingredients from a Markdown table or a bullet/checkbox list under a configurable heading.
+- Works with any OpenAI-compatible chat endpoint: Ollama, llama.cpp, LM Studio, OpenAI, OpenRouter, and others. A local model keeps your recipes on your machine.
+- Normalizes lines such as `2 tbsp finely chopped dill` into `dill`, converts to your preferred shopping unit (for example half a bunch), and drops stray instruction sentences.
+- Sums the same ingredient across recipes and rounds up to sensible shopping amounts.
+- **Servings multiplier** to scale every quantity.
+- **Review before sending:** untick what you already have, fix names, quantities and units. Nothing is sent or created until you confirm.
+- **Sent marker:** writes the date into a frontmatter property of the recipe (optional), and the picker lists unsent recipes first.
+- Unit dictionary (`ingredient_units.yaml`) in your vault; the LLM proposes entries for new ingredients, which are appended for you to review.
+- Re-sending the same item updates it instead of creating a duplicate.
+
+## Requirements and disclosures
+
+Please read this before installing.
+
+- **A Bring! account is required.** The plugin has no function without one.
+- **Network use.** The plugin contacts only two kinds of servers:
+  1. `api.getbring.com`, to log in to your Bring! account, read your lists, create a list and add items.
+  2. The LLM endpoint **you** configure in the settings (by default `http://localhost:11434/v1`). The text of the selected ingredient lines and your unit dictionary are sent to that endpoint. If you point it at a cloud service, that service receives this text.
+- **Unofficial API.** Bring! does not publish an API for this. The plugin talks to the same web API that the Bring! web app uses, modeled on the open-source [node-bring-api](https://github.com/foxriver76/node-bring-api). It may stop working at any time, and using it may not be permitted by Bring!'s terms. **Use it at your own risk and with your own account.**
+- **Secrets.** Your Bring! password and the optional LLM API key are stored in Obsidian's secret storage (the system keychain), not in `data.json` and not in your vault. The Bring! email is stored in the plugin's `data.json`.
+- **No telemetry, no ads, no payments.** The plugin does not collect or send usage data anywhere.
+- **Files.** The plugin reads the notes you select and your unit dictionary, and it can write the dictionary file and the "sent" frontmatter property. It does not access files outside your vault.
+
+## Installation
+
+From the Community plugins browser: search for "Recipe Shopping List".
+
+Manual: download `main.js` and `manifest.json` from the latest release into `<vault>/.obsidian/plugins/recipe-shopping-list/`, then enable the plugin.
+
+Requires Obsidian 1.11.4 or newer (secret storage).
+
+## Setup
+
+1. **LLM:** set the base URL (for example `http://localhost:11434/v1` for Ollama), optionally choose an API key secret, and pick a model (use **Load models** to list what the server offers). Models that "think" before answering can return an empty reply on some servers: turn reasoning off on the server if you see that.
+2. **Bring!:** enter your email and choose or create a secret holding your password.
+3. **Recipes:** by default a note counts as a recipe when its frontmatter has `type: recipe`, and the ingredients sit under a heading called `Ingredients`. If your ingredients are in a table, `Ingredient table column` selects the column with the ingredient text (default 2). All of this is configurable.
+4. Optional: copy [`ingredient_units.yaml`](ingredient_units.yaml) into your vault and adjust it.
+
+## Usage
+
+Run the command **Add ingredients from recipes to shopping list**:
+
+1. Choose recipes (the active note is preselected) and a servings multiplier.
+2. Choose the Bring! list, or create a new one (named after the recipe by default).
+3. Review the summed list and confirm.
+
+## Recipe format
+
+Either a table:
+
+```markdown
+## Ingredients
+| Original | Normalized |
+| :--- | :--- |
+| 1 cup rice | 200 g rice |
+| 2 tbsp chopped dill | 2 tbsp chopped dill |
 ```
+
+or a list:
+
+```markdown
+## Ingredients
+- 200 g flour
+- [ ] 2 eggs
+```
+
+Sub-section labels ending with a colon (`Herb butter:`) are skipped. Ingredients and recipe text can be in any language; ingredient names keep the language of the recipe.
+
+## Development
+
+```bash
 npm install
-npm run build   # tsc -noEmit + esbuild → main.js
+npm run build   # tsc + esbuild -> main.js
+npm test        # unit and smoke tests (nothing reaches a live account)
+npm run lint    # official eslint-plugin-obsidianmd rules
 ```
 
-## Instalacja w vaultcie (ręczna)
+Releases are built by GitHub Actions when a tag matching the manifest version (for example `1.0.0`) is pushed.
 
-1. Skopiuj `main.js` i `manifest.json` do `<vault>/.obsidian/plugins/lista-zakupow/`.
-2. Włącz wtyczkę: Ustawienia → Community plugins → Lista zakupów.
-3. W ustawieniach wtyczki podaj: adres LLM (np. `http://localhost:11434/v1`),
-   nazwę modelu oraz e-mail i hasło Bring!. Listy docelowej się tu nie ustawia —
-   wybierasz ją przy każdym wysłaniu.
-4. Skopiuj startowy `ingredient_units.yaml` do vaulta (domyślna ścieżka:
-   `ingredient_units.yaml` w korzeniu; zmienisz ją w ustawieniach).
+## License
 
-## Użycie
-
-Paleta poleceń → „Dodaj składniki z przepisów do listy zakupów" → wybierz
-notatki → wskaż listę docelową → „Wyślij do listy zakupów".
-
-W kroku wyboru wtyczka pokazuje listy z Twojego konta Bring!. Domyślnie
-proponuje założenie nowej, o nazwie przepisu (przy kilku przepisach: tytuł
-pierwszego z licznikiem pozostałych, np. `Schabowe +1`); nazwę możesz zmienić
-w polu obok. Nowa lista powstaje dopiero po normalizacji składników, więc
-nieudany przebieg nie zostawia pustej listy w aplikacji.
-
-Po wysyłce zobaczysz podsumowanie:
-co dodano, co zsumowano i jakie propozycje trafiły do słownika (sekcja
-`# --- propozycje LLM (zweryfikuj i popraw ręcznie) ---` w YAML — przejrzyj je).
-
-## Testy
-
-```
-npm test   # esbuild kompiluje moduły do test/.build, potem node --test
-```
-
-Testy adaptera chodzą na rejestratorze żądań w miejsce HTTP, więc nic nie
-wychodzi na żywe konto Bring!. Osobny smoke-test ładuje zbudowany `main.js`
-na atrapie modułu `obsidian` i sprawdza rejestrację komendy oraz trwałość
-ustawień.
-
-## Uwagi
-
-- Ponowne wysłanie tej samej pozycji aktualizuje jej opis w Bring! zamiast
-  tworzyć duplikat (nazwy pozycji są unikalne w obrębie listy) — całość jest
-  bezpieczna do wielokrotnego uruchomienia.
-- Zakładanie listy idzie na `POST v2/bringusers/{userUuid}/lists`. Tego wywołania
-  nie zna żadna z bibliotek społecznościowych: ścieżka jest ta sama, co przy
-  pobieraniu list, różni je metoda. Odczytane z bundla aplikacji webowej Bringa
-  i potwierdzone żywym żądaniem — szczegóły w `../docs/sciezka-dowodowa.md`.
-- Usuwania listy API nie udostępnia. Kasuje się ją w aplikacji Bring!.
-- API Bring! jest nieoficjalne (reverse-engineered) — może przestać działać
-  przy zmianie backendu. Adapter jest izolowany za interfejsem
-  `ShoppingListAdapter`, łatwo podmienić na inny (Mealie/Grocy).
-- Dane logowania Bring! są w `data.json` wtyczki — patrz ostrzeżenie
-  w ustawieniach dot. synchronizacji folderu `.obsidian`.
+[MIT](LICENSE)
