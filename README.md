@@ -35,7 +35,7 @@ Please read this before installing.
 
 From the Community plugins browser: search for "Recipe Shopping List".
 
-Manual: download `main.js` and `manifest.json` from the latest release into `<vault>/.obsidian/plugins/recipe-shopping-list/`, then enable the plugin.
+Manual: download `main.js`, `manifest.json` and `styles.css` from the latest release into `<vault>/.obsidian/plugins/recipe-shopping-list/`, then enable the plugin.
 
 Requires Obsidian 1.11.4 or newer (secret storage).
 
